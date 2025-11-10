@@ -1,3 +1,10 @@
 {
-  "messages": []
+  "messages": [
+    {
+      "id": 1,
+      "username": "Sistema",
+      "message": "Chat inicializado. Envie uma mensagem!",
+      "timestamp": 0
+    }
+  ]
 }
