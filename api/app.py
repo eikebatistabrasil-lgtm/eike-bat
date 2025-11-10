@@ -1,79 +1,71 @@
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.templating import Jinja2Templates
-import os, json, asyncio, time
-from collections import deque
-import uvicorn
+import json, os, asyncio
 
-# Cria o app FastAPI
 app = FastAPI()
 
-# Configura templates e arquivos estáticos
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Libera acesso do Tumblr, Blogger, etc
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+DB_PATH = "db/data.json"
+LOCK = asyncio.Lock()
+connections = set()
+
+# Templates (HTML)
 templates = Jinja2Templates(directory="templates")
 
-# Lista de conexões WebSocket e histórico
-connections = set()
-connections_lock = asyncio.Lock()
-history = deque(maxlen=100)
+# --- Banco local em JSON ---
+def read_db():
+    if not os.path.exists(DB_PATH):
+        os.makedirs("db", exist_ok=True)
+        with open(DB_PATH, "w", encoding="utf-8") as f:
+            json.dump({"messages": []}, f)
+    with open(DB_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
 
-# Rota principal
+async def write_db(data):
+    async with LOCK:
+        with open(DB_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+
+# --- Rotas ---
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Endpoint WebSocket
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    async with connections_lock:
-        connections.add(websocket)
+@app.get("/api/messages")
+def get_messages():
+    return JSONResponse(read_db())
 
-    # Envia histórico ao novo cliente
-    await websocket.send_text(json.dumps({
-        "type": "history",
-        "messages": list(history)
-    }))
+@app.post("/api/send/{user}/{text}")
+async def send_message(user: str, text: str):
+    db = read_db()
+    db["messages"].append({"user": user, "text": text})
+    await write_db(db)
+    return {"ok": True, "messages": db["messages"]}
+
+@app.websocket("/ws")
+async def websocket_endpoint(ws: WebSocket):
+    await ws.accept()
+    connections.add(ws)
+    await ws.send_json({"system": "🔗 Conectado com sucesso"})
 
     try:
         while True:
-            data = await websocket.receive_text()
-            try:
-                payload = json.loads(data)
-            except json.JSONDecodeError:
-                continue
+            msg = await ws.receive_json()
+            db = read_db()
+            db["messages"].append(msg)
+            await write_db(db)
 
-            if payload.get("type") == "message":
-                msg = {
-                    "type": "message",
-                    "username": payload.get("username") or "Anônimo",
-                    "message": payload.get("message"),
-                    "timestamp": int(time.time())
-                }
-                history.append(msg)
-                await broadcast(msg)
-
+            for c in connections:
+                await c.send_json(msg)
     except WebSocketDisconnect:
-        async with connections_lock:
-            connections.remove(websocket)
-
-
-# Função de broadcast (envia pra todos)
-async def broadcast(message: dict):
-    text = json.dumps(message)
-    async with connections_lock:
-        to_remove = []
-        for ws in list(connections):
-            try:
-                await ws.send_text(text)
-            except:
-                to_remove.append(ws)
-        for ws in to_remove:
-            connections.remove(ws)
-
-
-# Inicialização (Render usa variável PORT)
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+        connections.remove(ws)
