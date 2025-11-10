@@ -1,60 +1,18 @@
-body {
-  background-color: #0d0d0d;
-  color: #f2f2f2;
-  font-family: "Segoe UI", Arial, sans-serif;
-  margin: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-}
-
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  width: 90%;
-  max-width: 600px;
-  height: 90vh;
-  border: 1px solid #222;
-  border-radius: 10px;
-  background: linear-gradient(180deg, #111 0%, #000 100%);
-  box-shadow: 0 0 10px rgba(255,255,255,0.05);
-}
-
-header {
-  text-align: center;
-  padding: 10px;
-  border-bottom: 1px solid #222;
-}
-
-.subtitle {
-  color: #888;
-  font-size: 12px;
-  margin: 0;
-}
-
-#messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.msg {
-  background: rgba(255,255,255,0.05);
-  border-radius: 8px;
-  padding: 6px 10px;
-}
-
-.time {
-  font-size: 11px;
-  color: #888;
-  margin-left: 5px;
-}
-
-.system {
-  font-style: italic;
-  color: #9aa6ff;
-  text-align
+/* static/style.css */
+body { background:#0d0d0f; color:#eaeaea; font-family: Inter, Arial, sans-serif; margin:0; padding:20px;}
+.wrap { max-width:900px; margin:0 auto; }
+header h1{ margin:0 0 6px 0; }
+.sub{ color:#bdbdbd; margin:4px 0 12px 0; }
+#chat{ margin-bottom:12px; }
+#messages{ background:#0b0b0b; border:1px solid #222; padding:12px; min-height:220px; max-height:60vh; overflow:auto; border-radius:8px;}
+.msg{ padding:10px; border-radius:6px; background:#131313; margin-bottom:8px; border:1px solid #222; }
+.msg .meta{ font-size:13px; color:#d0d0d0; display:flex; justify-content:space-between; margin-bottom:6px;}
+.msg .text{ font-size:15px; color:#fff; }
+.actions{ margin-top:8px; }
+.actions button{ background:transparent; border:1px solid #444; color:#ddd; padding:6px 8px; border-radius:4px; cursor:pointer; margin-right:6px;}
+#controls{ display:flex; gap:8px; margin-top:12px; }
+#controls input{ padding:10px; border-radius:6px; border:1px solid #333; background:#0b0b0b; color:#eee; flex:1;}
+#controls button{ padding:10px 14px; border-radius:6px; border:none; background:gold; color:#000; font-weight:700; cursor:pointer;}
+#tools{ margin-top:10px; display:flex; gap:8px; }
+.empty{ color:#888; padding:18px; text-align:center;}
+footer{ margin-top:14px; color:#aaa; font-size:13px; }
