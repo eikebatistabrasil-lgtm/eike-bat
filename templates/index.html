@@ -3,73 +3,89 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GitRender Chat</title>
-  <link rel="stylesheet" href="/static/style.css" />
+  <title>Eike Chat</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0a0a0a;
+      color: #f1f1f1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+    }
+    #chat-box {
+      width: 90%;
+      max-width: 600px;
+      height: 60vh;
+      border: 1px solid #333;
+      border-radius: 10px;
+      background: #111;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    #input-area {
+      width: 90%;
+      max-width: 600px;
+      display: flex;
+      margin-top: 10px;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 6px;
+      border: none;
+      outline: none;
+      background: #222;
+      color: white;
+    }
+    button {
+      background: gold;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: black;
+      font-weight: bold;
+      margin-left: 5px;
+    }
+  </style>
 </head>
 <body>
-  <div class="chat-container">
-    <header>
-      <h1>💬 GitRender Chat</h1>
-      <p class="subtitle">Chat conectado ao backend Python (Render)</p>
-    </header>
-
-    <main id="messages"></main>
-
-    <footer>
-      <input id="username" type="text" placeholder="Seu nome" />
-      <input id="message" type="text" placeholder="Digite uma mensagem..." />
-      <button id="send">Enviar</button>
-    </footer>
+  <h2>💬 Eike Chat</h2>
+  <div id="chat-box"></div>
+  <div id="input-area">
+    <input id="msg" placeholder="Digite uma mensagem..." />
+    <button onclick="sendMessage()">Enviar</button>
   </div>
 
   <script>
-  const messages = document.getElementById('messages');
-  const usernameInput = document.getElementById('username');
-  const messageInput = document.getElementById('message');
-  const sendBtn = document.getElementById('send');
+    const ws = new WebSocket("wss://" + window.location.host + "/ws");
+    const box = document.getElementById("chat-box");
+    const msg = document.getElementById("msg");
 
-  const wsProtocol = location.protocol === "https:" ? "wss" : "ws";
-  const socket = new WebSocket(`${wsProtocol}://${location.host}/ws`);
+    ws.onopen = () => add("🔗 Conectado ao servidor");
+    ws.onmessage = e => {
+      const data = JSON.parse(e.data);
+      if (data.system) add(data.system);
+      else add(`${data.user || "Anônimo"}: ${data.text}`);
+    };
 
-  socket.addEventListener('open', () => addSystem("Conectado ao servidor!"));
-  socket.addEventListener('close', () => addSystem("Desconectado — reconectando..."));
-
-  socket.addEventListener('message', (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === "history") {
-      data.messages.forEach(addMessage);
-    } else if (data.type === "message") {
-      addMessage(data);
+    function sendMessage() {
+      if (!msg.value.trim()) return;
+      const m = { user: "Alex", text: msg.value };
+      ws.send(JSON.stringify(m));
+      msg.value = "";
     }
-  });
 
-  sendBtn.onclick = sendMessage;
-  messageInput.addEventListener('keypress', (e) => e.key === "Enter" && sendMessage());
-
-  function sendMessage() {
-    const msg = messageInput.value.trim();
-    const user = usernameInput.value.trim() || "Anônimo";
-    if (!msg) return;
-    socket.send(JSON.stringify({ type: "message", username: user, message: msg }));
-    messageInput.value = "";
-  }
-
-  function addMessage({ username, message, timestamp }) {
-    const el = document.createElement("div");
-    el.className = "msg";
-    const time = new Date(timestamp * 1000).toLocaleTimeString();
-    el.innerHTML = `<b>${username}</b> <span class="time">${time}</span><br>${message}`;
-    messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
-  }
-
-  function addSystem(text) {
-    const el = document.createElement("div");
-    el.className = "system";
-    el.textContent = text;
-    messages.appendChild(el);
-    messages.scrollTop = messages.scrollHeight;
-  }
+    function add(text) {
+      const div = document.createElement("div");
+      div.textContent = text;
+      box.appendChild(div);
+      box.scrollTop = box.scrollHeight;
+    }
   </script>
 </body>
 </html>
