@@ -10,7 +10,18 @@ import os, time
 # -----------------------------------------------------
 SUPABASE_URL = "https://bceykkqbdsdrclmeybxx.supabase.co"  # substitua aqui
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJjZXlra3FiZHNkcmNsbWV5Ynh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI3ODYxODEsImV4cCI6MjA3ODM2MjE4MX0.mZ5j9DRHANmX2w2avkMGydbj4a8GibSaozsegm24dR8"                # substitua aqui
+#supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+from supabase import create_client
+
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
+
+try:
+    data = supabase.table("messages").select("*").limit(1).execute()
+    print("✅ Conexão OK:", data)
+except Exception as e:
+    print("❌ Erro Supabase:", e)
+
+
 
 # -----------------------------------------------------
 #  App FastAPI e diretórios
