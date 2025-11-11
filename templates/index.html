@@ -1,160 +1,24 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Eike Chat</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chat Global - LocalStorage</title>
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>💬 Eike Chat</h1>
-      <p class="sub">Chat simples (REST + JSON DB) — mensagens aparecem na tela imediatamente.</p>
-    </header>
+  <div class="chat-container">
+    <h2>💬 Chat Local</h2>
 
-    <main>
-      <section id="chat">
-        <div id="messages"></div>
-      </section>
+    <div id="messages" class="messages"></div>
 
-      <section id="controls">
-        <input id="username" placeholder="Seu nome (opcional)" />
-        <input id="message" placeholder="Escreva sua mensagem..." />
-        <button id="send">Enviar</button>
-        <button id="refresh">Atualizar</button>
-      </section>
-
-      <section id="tools">
-        <input id="search" placeholder="Buscar..." />
-        <button id="btn-search">Buscar</button>
-        <button id="btn-clear-search">Limpar busca</button>
-      </section>
-
-    </main>
-
-    <footer>
-      <small id="status">Conectando...</small>
-    </footer>
+    <form id="chatForm">
+      <input type="text" id="username" placeholder="Seu nome" required>
+      <input type="text" id="message" placeholder="Digite uma mensagem..." required>
+      <button type="submit">Enviar</button>
+    </form>
   </div>
 
-<script>
-const apiBase = "/";
-const messagesDiv = document.getElementById("messages");
-const status = document.getElementById("status");
-
-async function fetchMessages() {
-  try {
-    const res = await fetch(apiBase + "api/messages");
-    const data = await res.json();
-    renderMessages(data.messages || []);
-    status.innerText = "Última atualização: " + new Date().toLocaleTimeString();
-  } catch (e) {
-    status.innerText = "Erro ao carregar mensagens: " + e;
-  }
-}
-
-function renderMessages(msgs) {
-  messagesDiv.innerHTML = "";
-  if (!msgs.length) {
-    messagesDiv.innerHTML = "<div class='empty'>Nenhuma mensagem</div>";
-    return;
-  }
-  msgs.forEach(m => {
-    const el = document.createElement("div");
-    el.className = "msg";
-    const time = new Date((m.timestamp || 0) * 1000).toLocaleTimeString();
-    el.innerHTML = `<div class="meta"><b>${escapeHtml(m.username||'Anônimo')}</b> <span class="time">${time}</span></div>
-                    <div class="text">${escapeHtml(m.message)}</div>
-                    <div class="actions">
-                      <button class="btn-edit" data-id="${m.id}">editar</button>
-                      <button class="btn-del" data-id="${m.id}">apagar</button>
-                    </div>`;
-    messagesDiv.appendChild(el);
-  });
-  attachButtons();
-}
-
-function attachButtons(){
-  document.querySelectorAll(".btn-del").forEach(btn=>{
-    btn.onclick = async () => {
-      const id = btn.dataset.id;
-      if(!confirm("Apagar mensagem id "+id+"?")) return;
-      await fetch(apiBase + "api/message/" + id, { method: "DELETE" });
-      await fetchMessages();
-    };
-  });
-  document.querySelectorAll(".btn-edit").forEach(btn=>{
-    btn.onclick = async () => {
-      const id = btn.dataset.id;
-      const newText = prompt("Novo texto:");
-      if(newText === null) return;
-      await fetch(apiBase + "api/message/" + id, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: newText })
-      });
-      await fetchMessages();
-    };
-  });
-}
-
-function escapeHtml(s){
-  if(!s) return "";
-  return s.replace(/[&<>"']/g, c => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
-  })[c]);
-}
-
-document.getElementById("send").onclick = async () => {
-  const username = document.getElementById("username").value || "Anônimo";
-  const message = document.getElementById("message").value || "";
-  if(!message.trim()) return alert("Escreve a mensagem");
-  // envia JSON
-  try {
-    const res = await fetch(apiBase + "api/send", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, message })
-    });
-    const data = await res.json();
-    // data.message contém a msg adicionada
-    if(data && data.message){
-      // adiciona ao DOM sem recarregar completamente
-      const msgs = (await (await fetch(apiBase + "api/messages")).json()).messages || [];
-      renderMessages(msgs);
-      document.getElementById("message").value = "";
-    } else {
-      // fallback: recarrega
-      fetchMessages();
-    }
-  } catch (e) {
-    alert("Erro ao enviar: " + e);
-  }
-};
-
-document.getElementById("refresh").onclick = fetchMessages;
-
-document.getElementById("btn-search").onclick = async () => {
-  const q = document.getElementById("search").value.trim();
-  if(!q) return fetchMessages();
-  try {
-    const res = await fetch(apiBase + "api/search?q=" + encodeURIComponent(q));
-    const data = await res.json();
-    renderMessages(data.messages || []);
-  } catch (e) {
-    alert("Erro na busca: " + e);
-  }
-};
-
-document.getElementById("btn-clear-search").onclick = () => {
-  document.getElementById("search").value = "";
-  fetchMessages();
-};
-
-// tenta atualizar periodicamente (a cada 5s)
-setInterval(fetchMessages, 5000);
-fetchMessages();
-</script>
+  <script src="/static/script.js"></script>
 </body>
 </html>
